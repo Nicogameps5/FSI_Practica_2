@@ -514,6 +514,28 @@ class Queue:
         for item in items:
             self.append(item)
 
+import heapq
+"""Cola de prioridad"""
+class PriorityQueue:
+    def __init__(self, f):
+        self.f = f
+        self.heap = []
+        self.count = 0
+
+    def append(self, item):
+        heapq.heappush(self.heap, (self.f(item), self.count, item))
+        self.count += 1
+
+    def pop(self):
+        return heapq.heappop(self.heap)[2]
+
+    def extend(self, items):
+        for item in items:
+            self.append(item)
+
+    def __len__(self):
+        return len(self.heap)
+
 
 def Stack():
     """Return an empty list, suitable as a Last-In-First-Out Queue."""

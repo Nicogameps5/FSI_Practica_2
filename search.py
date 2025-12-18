@@ -4,7 +4,6 @@ The way to use this code is to subclass Problem to create a class of problems,
 then create problem instances and solve them with calls to the various search
 functions."""
 
-
 from utils import *
 import random
 import sys
@@ -130,81 +129,13 @@ def depth_first_graph_search(problem):
     return graph_search(problem, Stack())
 
 
-import heapq
+from utils import PriorityQueue
 
 def branch_and_bound_search(problem):
-
-    fringe = []
-    counter = 0
-
-    start = Node(problem.initial)
-    heapq.heappush(fringe, (start.path_cost, counter, start))
-    counter += 1
-
-    generated = 1
-    visited = 0
-
-    best_cost = {problem.initial: 0}
-
-    while fringe:
-        cost, _, node = heapq.heappop(fringe)
-        visited += 1
-
-        if problem.goal_test(node.state):
-            return node, generated, visited
-
-        for child in node.expand(problem):
-            generated += 1
-            g = child.path_cost
-
-            if child.state in best_cost and best_cost[child.state] <= g:
-                continue
-
-            best_cost[child.state] = g
-            heapq.heappush(fringe, (g, counter, child))
-            counter += 1
-
-    return None, generated, visited
-
+    return graph_search(problem, PriorityQueue(lambda node: node.path_cost))
 
 def branch_and_bound_with_underestimation(problem):
-
-    fringe = []
-    counter = 0
-
-    start = Node(problem.initial)
-    f0 = start.path_cost + problem.h(start)
-
-    heapq.heappush(fringe, (f0, counter, start))
-    counter += 1
-
-    generated = 1
-    visited = 0
-
-    best_f = {problem.initial: f0}
-
-    while fringe:
-        f_value, _, node = heapq.heappop(fringe)
-        visited += 1
-
-        if problem.goal_test(node.state):
-            return node, generated, visited
-
-        for child in node.expand(problem):
-            generated += 1
-
-            f = child.path_cost + problem.h(child)
-
-            if child.state in best_f and best_f[child.state] <= f:
-                continue
-
-            best_f[child.state] = f
-
-            heapq.heappush(fringe, (f, counter, child))
-            counter += 1
-
-    return None, generated, visited
-
+    return graph_search(problem,PriorityQueue(lambda node: node.path_cost + problem.h(node)))
 
 
 # _____________________________________________________________________________

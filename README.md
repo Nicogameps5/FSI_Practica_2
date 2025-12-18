@@ -10,172 +10,92 @@ El objetivo de la práctica es ampliar dicho código para incorporar nuevas estr
 
 ---
 
-## Parte 1 – Ramificación y Acotación
+# Parte 1 – Ramificación y Acotación
 
-### Descripción
+## Descripción
 
-Se ha añadido al código base la estrategia de búsqueda **Ramificación y Acotación (Branch and Bound)**.  
-Esta estrategia explora el espacio de búsqueda priorizando aquellos nodos cuyo coste acumulado es menor.
+En esta parte de la práctica se ha incorporado la estrategia de búsqueda **Ramificación y Acotación** al código base proporcionado.  
 
-El coste acumulado se gestiona mediante el atributo `path_cost` del nodo, ya presente en el código base.
-
-### Implementación
-
-La estrategia se ha implementado utilizando una **cola de prioridad**, que permite seleccionar en cada iteración el nodo con menor coste acumulado (`path_cost`), cumpliendo el principio de Ramificación y Acotación.
-
+Para su implementación, no se ha modificado el algoritmo `graph_search`.
+En su lugar, se ha creado una **cola de prioridad en el archivo `utils`**, que permite ordenar la lista abierta según un criterio de coste.
 ```python
-fringe = []
-counter = 0
+import heapq
+"""Cola de prioridad"""
+class PriorityQueue:
+    def __init__(self, f):
+        self.f = f
+        self.heap = []
+        self.count = 0
+
+    def append(self, item):
+        heapq.heappush(self.heap, (self.f(item), self.count, item))
+        self.count += 1
+
+    def pop(self):
+        return heapq.heappop(self.heap)[2]
+
+    def extend(self, items):
+        for item in items:
+            self.append(item)
+
+    def __len__(self):
+        return len(self.heap)
+
 ```
-
-Se inicializa la **frontera** como una cola de prioridad (`fringe`) y un contador auxiliar (`counter`) que se utiliza para desempatar nodos con el mismo coste, evitando errores de comparación entre objetos `Node`.
-
-```python
-start = Node(problem.initial)
-heapq.heappush(fringe, (start.path_cost, counter, start))
-counter += 1
-```
-
-Se crea el nodo inicial y se inserta en la cola de prioridad con coste cero.  
-Cada elemento de la cola tiene la forma `(coste, contador, nodo)`.
 
 ---
 
+## Implementación
+
+La estrategia se implementa llamando directamente a `graph_search` y pasando como lista abierta una cola de prioridad que ordena los nodos por su coste acumulado (`path_cost`):
+
 ```python
-generated = 1
-visited = 0
+def branch_and_bound_search(problem):
+    return graph_search(
+        problem,
+        PriorityQueue(lambda node: node.path_cost)
+    )
 ```
 
-Se inicializan los contadores de **nodos generados** y **nodos visitados**, que permiten analizar el rendimiento del algoritmo.
+De esta forma, la diferencia entre BFS, DFS y Ramificación y Acotación se basa únicamente en el tipo de estructura utilizada para la lista abierta, manteniendo una implementación modular y reutilizable.
 
 ---
 
-```python
-best_cost = {problem.initial: 0}
-```
+# Parte 2 – Ramificación y Acotación con Subestimación
 
-Este diccionario almacena el **menor coste conocido** para alcanzar cada estado.  
-Se utiliza para implementar la **acotación**, evitando expandir caminos peores que otros ya explorados.
+## Descripción
 
----
+En esta segunda parte se ha implementado una variante de Ramificación y Acotación que incorpora una **heurística subestimada**.
 
-```python
-cost, _, node = heapq.heappop(fringe)
-visited += 1
-```
-
-En cada iteración se extrae de la cola el nodo con **menor coste acumulado**.  
-Este comportamiento garantiza que los caminos más prometedores se exploren primero.
+La heurística utilizada ya está incluida en el código base, dentro de la clase `GPSProblem`, y calcula la distancia euclídea en línea recta hasta el estado objetivo.  
+Al ser una heurística admisible, se mantiene la garantía de optimalidad de la solución.
 
 ---
 
-```python
-if problem.goal_test(node.state):
-    return node, generated, visited
-```
+## Implementación
 
-Si el nodo extraído corresponde al objetivo, se devuelve la solución junto con los el numero de nodos generados y visitados.
+Al igual que en la versión anterior, no se modifica `graph_search`.  
+La única diferencia consiste en cambiar el criterio de prioridad de la cola, utilizando ahora la función:
 
----
+f(n) = g(n) + h(n)
 
-```python
-for child in node.expand(problem):
-    generated += 1
-    g = child.path_cost
-```
-
-Se generan los nodos hijos mediante la función `expand`.  
-Cada hijo representa un nuevo estado alcanzado desde el nodo actual, y su coste acumulado se almacena en `g`.
-
----
+La implementación es la siguiente:
 
 ```python
-if child.state in best_cost and best_cost[child.state] <= g:
-    continue
+def branch_and_bound_with_underestimation(problem):
+    return graph_search(
+        problem,
+        PriorityQueue(lambda node: node.path_cost + problem.h(node))
+    )
 ```
 
-Este fragmento implementa la **acotación**.  
-Si ya se ha alcanzado el mismo estado con un coste menor o igual, el nuevo camino se descarta, ya que no puede conducir a una solución óptima.
+Este enfoque permite reducir el número de nodos explorados, manteniendo siempre el coste total óptimo de la solución.
 
----
-
-```python
-best_cost[child.state] = g
-heapq.heappush(fringe, (g, counter, child))
-counter += 1
-```
-
-Si el camino mejora el coste conocido para ese estado, se actualiza el diccionario y el nodo se inserta en la cola de prioridad para su posible expansión futura.
-
----
-
-```python
-return None, generated, visited
-```
-
-Si la cola de prioridad queda vacía sin encontrar el estado objetivo, el algoritmo finaliza indicando que no existe solución, junto con el numero de nodos generados y visitados.
-
-
-
-## Parte 2 – Ramificación y Acotación con Subestimación
-
-### Descripción
-
-Se ha implementado una variante de Ramificación y Acotación que incorpora una **heurística admisible**, en este caso la distancia euclídea hasta el objetivo, cuya función ya está incluida en el codigo base.
-
-### Implementación (cambios respecto a Ramificación y Acotación)
-
-A continuación se describen **únicamente las modificaciones y añadidos** con respecto a la versión sin subestimación.
-
----
-
-```python
-f0 = start.path_cost + problem.h(start)
-heapq.heappush(fringe, (f0, counter, start))
-```
-En lugar de insertar el nodo inicial usando solo el coste acumulado `g(n)`, se calcula el valor  
-`f(n) = g(n) + h(n)`, donde `h(n)` es la heurística.  
-Esto permite priorizar desde el inicio los nodos que parecen más cercanos al objetivo.
-
----
-
-```python
-best_f = {problem.initial: f0}
-```
-Se sustituye la estructura `best_cost` por `best_f`, que almacena el **menor valor f conocido** para cada estado.  
-De esta forma, la acotación se basa tanto en el coste real como en la estimación heurística.
-
----
-
-```python
-f = child.path_cost + problem.h(child)
-```
-Para cada nodo hijo se calcula el valor `f(n)`, combinando el coste acumulado del camino (`g(n)`) y la heurística (`h(n)`).  
-Este valor determina la prioridad de expansión del nodo.
-
----
-
-```python
-if child.state in best_f and best_f[child.state] <= f:
-    continue
-```
-La condición de acotación se adapta para comparar valores `f(n)` en lugar de solo `g(n)`.  
-Si ya existe un camino hacia el mismo estado con un valor `f` menor o igual, el nuevo nodo se descarta.
-
----
-
-```python
-heapq.heappush(fringe, (f, counter, child))
-```
-Los nodos se insertan en la cola de prioridad ordenados por `f(n)` en lugar de por el coste acumulado.  
-Esto reduce el número de nodos explorados, manteniendo la optimalidad gracias al uso de una heurística admisible.
-
-
-## Parte 3 – Contabilidad de nodos
+# Parte 3 – Contabilidad de nodos
 
 ### Implementación (cambios respecto al código base)
 
-En esta parte de la práctica se ha ampliado el algoritmo `graph_search` del código base para incorporar la **contabilidad de nodos generados y nodos visitados**, sin modificar el comportamiento lógico de la búsqueda.
+En esta última parte de la práctica se ha ampliado el algoritmo `graph_search` del código base para incorporar la **contabilidad de nodos generados y nodos visitados**, sin modificar el comportamiento lógico de la búsqueda.
 
 A continuación se describen **únicamente los elementos añadidos o modificados** respecto a la versión original.
 
