@@ -1,6 +1,6 @@
 # Práctica 2 – Fundamentos de los Sistemas Inteligentes
 
-## Estrategias de Búsqueda: Ramificación y Acotación
+## Estrategias de Búsqueda:
 
 ## Introducción
 
