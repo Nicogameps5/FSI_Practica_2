@@ -169,7 +169,7 @@ Para cada caso se muestran:
 ---
 Tabla con los resultados:
 
-![Tabla final](Tabla final.jpg)
+![Tabla final](Tabla_final.jpg)
 
 ---
 ## Conclusiones
